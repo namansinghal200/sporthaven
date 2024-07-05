@@ -111,6 +111,14 @@ export const createLobby = async (req, res, next) => {
     // Increment the currentsize of the sport by the currentsize of the lobby
     sport.currentsize += newLobby.currentsize;
     await sport.save(); // Save the updated sport
+    // Check if the current size of the newly created lobby equals maxsize
+    if (newLobby.currentsize === newLobby.maxsize) {
+      newLobby.isactive = false;
+      await newLobby.save(); // Save the updated lobby with isactive set to false
+    } else {
+      newLobby.isactive = true; // Set isactive to true if current size is less than maxsize
+      await newLobby.save();
+    }
 
     // Log the created lobby
     console.log('New Lobby:', newLobby);
@@ -120,7 +128,13 @@ export const createLobby = async (req, res, next) => {
       lobbyid: newLobby.lobbyid,
       userid: userId
     });
-
+    // Update the user's activelobby and currentlobby fields
+    const user3 = await User.findByPk(userId);
+    if (user3) {
+      user3.activelobby = true;
+      user3.currentlobby = lobbyid;
+      await user3.save(); // Save the updated user
+    }
     // Log the added lobby user
     console.log('Lobby User:', lobbyUser);
 
@@ -197,3 +211,92 @@ export const enterLobby = async (req, res, next) => {
   }
 };
 
+
+export const getActiveLobbies = async (req, res, next) => {
+  try {
+    // Query active lobbies where isactive is true
+    const activeLobbies = await Lobby.findAll({
+      where: {
+        isactive: true
+      }
+    });
+
+    res.status(200).json(activeLobbies);
+  } catch (error) {
+    console.error('Error fetching active lobbies:', error);
+    next(error); // Pass any errors to the error handling middleware
+  }
+};
+
+
+export const getPending = async (req, res, next) => {
+  try {
+    // Query lobbies where isactive is false and isupdated is false
+    const inactiveLobbies = await Lobby.findAll({
+      where: {
+        isactive: false,
+        isupdated: false
+      }
+    });
+
+    res.status(200).json(inactiveLobbies);
+  } catch (error) {
+    console.error('Error fetching inactive and not updated lobbies:', error);
+    next(error); // Pass any errors to the error handling middleware
+  }
+};
+
+
+export const updateWinners = async (req, res, next) => {
+  try {
+    const { lobbyid } = req.params;
+    const { winner, score } = req.body;
+
+    // Find the lobby by lobbyid
+    const lobby = await Lobby.findByPk(lobbyid);
+
+    if (!lobby) {
+      return res.status(404).json({ message: 'Lobby not found' });
+    }
+
+    // Check if the lobby is inactive
+    if (lobby.isactive) {
+      return res.status(400).json({ message: 'Lobby is still active' });
+    }
+
+    // Check if the lobby has already been updated
+    if (lobby.isupdated) {
+      return res.status(400).json({ message: 'Lobby has already been updated' });
+    }
+
+    // Update the winner and score values
+    lobby.winner = winner;
+    lobby.score = score;
+    lobby.isupdated = true;
+
+    // Save the updated lobby
+    await lobby.save();
+
+    res.status(200).json(lobby);
+  } catch (error) {
+    console.error('Error updating lobby winner and score:', error);
+    next(error); // Pass any errors to the error handling middleware
+  }
+};
+
+
+export const getUpdatedLobbies = async (req, res, next) => {
+  try {
+    // Find all lobbies where isupdated is true
+    const updatedLobbies = await Lobby.findAll({
+      where: {
+        isupdated: true
+      }
+    });
+
+    res.status(200).json(updatedLobbies);
+  } catch (error) {
+    console.error('Error fetching updated lobbies:', error);
+    next(error); // Pass any errors to the error handling middleware
+  }
+};
