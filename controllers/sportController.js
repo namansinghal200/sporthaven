@@ -1,7 +1,6 @@
 // controllers/sportController.js
-
 import db from '../models/index.js';
-const { Sport } = db;
+const { Sport, sequelize } = db;
 
 // Controller function to create a new sport
 export const createSport = async (req, res, next) => {
@@ -57,6 +56,26 @@ export const getSportByName = async (req, res, next) => {
       const { maxsize, currentsize } = sport;
   
       res.status(200).json({ name, maxsize, currentsize });
+    } catch (error) {
+      next(error); // Pass any errors to the error handling middleware
+    }
+  };
+
+  export const getAvlSports = async (req, res, next) => {
+    try {
+      const query = `
+        SELECT *
+        FROM sport
+        WHERE currentsize < maxsize
+      `;
+      
+      const sports = await sequelize.query(query, {
+        type: sequelize.QueryTypes.SELECT,
+        model: Sport,
+        mapToModel: true // Map results to Sport model instances
+      });
+  
+      res.status(200).json(sports);
     } catch (error) {
       next(error); // Pass any errors to the error handling middleware
     }
