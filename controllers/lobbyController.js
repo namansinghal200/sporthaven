@@ -28,7 +28,6 @@
 //   }
 // };
 
-
 // import db from '../models/index.js';
 // const { Lobby, LobbyUserIds } = db;
 
@@ -64,12 +63,9 @@
 //   }
 // };
 
-
-
-
 // controllers/lobbyController.js
 
-import db from '../models/index.js';
+import db from "../models/index.js";
 const { Lobby, LobbyUserIds, Sport, User } = db;
 
 export const createLobby = async (req, res, next) => {
@@ -77,27 +73,31 @@ export const createLobby = async (req, res, next) => {
     const { sportid, maxsize } = req.body;
     const userId = req.user.id; // Assuming user ID is available in req.user
 
-     // Check if the user is already in a lobby
-     const user = await User.findByPk(userId);
-     if (user && user.activelobby) {
-       return res.status(400).json({ message: 'User is already in a lobby' });
-     }
+    // Check if the user is already in a lobby
+    const user = await User.findByPk(userId);
+    if (user && user.activelobby) {
+      return res.status(400).json({ message: "User is already in a lobby" });
+    }
 
     // Find the sport by sportid to check available spots
     const sport = await Sport.findByPk(sportid);
 
     if (!sport) {
-      return res.status(404).json({ message: 'Sport not found' });
+      return res.status(404).json({ message: "Sport not found" });
     }
 
     // Check if there are available spots in the sport
     if (sport.currentsize >= sport.maxsize) {
-      return res.status(400).json({ message: 'No available spots in the selected sport' });
+      return res
+        .status(400)
+        .json({ message: "No available spots in the selected sport" });
     }
 
     // Check if maxsize of the lobby exceeds available spots in the sport
     if (maxsize > sport.maxsize - sport.currentsize) {
-      return res.status(400).json({ message: 'Lobby size exceeds available spots in the selected sport' });
+      return res.status(400).json({
+        message: "Lobby size exceeds available spots in the selected sport",
+      });
     }
 
     // Create the lobby
@@ -105,7 +105,7 @@ export const createLobby = async (req, res, next) => {
       sportid,
       maxsize,
       currentsize: 1, // Initial size of 1 since the creating user is joining
-      isactive: true
+      isactive: true,
     });
 
     // Increment the currentsize of the sport by the currentsize of the lobby
@@ -121,53 +121,51 @@ export const createLobby = async (req, res, next) => {
     }
 
     // Log the created lobby
-    console.log('New Lobby:', newLobby);
+    console.log("New Lobby:", newLobby);
 
     // Add the current user to the lobby_userids table
     const lobbyUser = await LobbyUserIds.create({
       lobbyid: newLobby.lobbyid,
-      userid: userId
+      userid: userId,
     });
     // Update the user's activelobby and currentlobby fields
     const user3 = await User.findByPk(userId);
     if (user3) {
       user3.activelobby = true;
-      user3.currentlobby = lobbyid;
+      user3.currentlobby = newLobby.lobbyid;
       await user3.save(); // Save the updated user
     }
     // Log the added lobby user
-    console.log('Lobby User:', lobbyUser);
+    console.log("Lobby User:", lobbyUser);
 
     res.status(201).json(newLobby);
   } catch (error) {
-    console.error('Error creating lobby:', error);
+    console.error("Error creating lobby:", error);
     next(error); // Pass any errors to the error handling middleware
   }
 };
-
-
 
 export const enterLobby = async (req, res, next) => {
   try {
     const { lobbyid } = req.params;
     const userId = req.user.id; // Assuming user ID is available in req.user
 
-     // Check if the user is already in a lobby
-     const user2 = await User.findByPk(userId);
-     if (user2 && user2.activelobby) {
-       return res.status(400).json({ message: 'User is already in a lobby' });
-     }
+    // Check if the user is already in a lobby
+    const user2 = await User.findByPk(userId);
+    if (user2 && user2.activelobby) {
+      return res.status(400).json({ message: "User is already in a lobby" });
+    }
 
     // Find the lobby by lobbyid
     const lobby = await Lobby.findByPk(lobbyid);
 
     if (!lobby) {
-      return res.status(404).json({ message: 'Lobby not found' });
+      return res.status(404).json({ message: "Lobby not found" });
     }
 
     // Check if the lobby is active
     if (!lobby.isactive) {
-      return res.status(400).json({ message: 'Lobby is not active' });
+      return res.status(400).json({ message: "Lobby is not active" });
     }
 
     // Increment the current size of the lobby
@@ -184,11 +182,11 @@ export const enterLobby = async (req, res, next) => {
     // Add the user to the lobby_userids table
     const lobbyUser = await LobbyUserIds.create({
       lobbyid: lobby.lobbyid,
-      userid: userId
+      userid: userId,
     });
 
     // Log the added lobby user
-    console.log('Entered Lobby User:', lobbyUser);
+    console.log("Entered Lobby User:", lobbyUser);
 
     const sport = await Sport.findByPk(lobby.sportid);
     if (sport) {
@@ -196,38 +194,36 @@ export const enterLobby = async (req, res, next) => {
       await sport.save(); // Save the updated sport
     }
 
-     // Update the user's activelobby and currentlobby fields
-     const user = await User.findByPk(userId);
-     if (user) {
-       user.activelobby = true;
-       user.currentlobby = lobbyid;
-       await user.save(); // Save the updated user
-     }
+    // Update the user's activelobby and currentlobby fields
+    const user = await User.findByPk(userId);
+    if (user) {
+      user.activelobby = true;
+      user.currentlobby = lobbyid;
+      await user.save(); // Save the updated user
+    }
 
     res.status(200).json(lobby);
   } catch (error) {
-    console.error('Error entering lobby:', error);
+    console.error("Error entering lobby:", error);
     next(error); // Pass any errors to the error handling middleware
   }
 };
-
 
 export const getActiveLobbies = async (req, res, next) => {
   try {
     // Query active lobbies where isactive is true
     const activeLobbies = await Lobby.findAll({
       where: {
-        isactive: true
-      }
+        isactive: true,
+      },
     });
 
     res.status(200).json(activeLobbies);
   } catch (error) {
-    console.error('Error fetching active lobbies:', error);
+    console.error("Error fetching active lobbies:", error);
     next(error); // Pass any errors to the error handling middleware
   }
 };
-
 
 export const getPending = async (req, res, next) => {
   try {
@@ -235,17 +231,16 @@ export const getPending = async (req, res, next) => {
     const inactiveLobbies = await Lobby.findAll({
       where: {
         isactive: false,
-        isupdated: false
-      }
+        isupdated: false,
+      },
     });
 
     res.status(200).json(inactiveLobbies);
   } catch (error) {
-    console.error('Error fetching inactive and not updated lobbies:', error);
+    console.error("Error fetching inactive and not updated lobbies:", error);
     next(error); // Pass any errors to the error handling middleware
   }
 };
-
 
 export const updateWinners = async (req, res, next) => {
   try {
@@ -256,17 +251,19 @@ export const updateWinners = async (req, res, next) => {
     const lobby = await Lobby.findByPk(lobbyid);
 
     if (!lobby) {
-      return res.status(404).json({ message: 'Lobby not found' });
+      return res.status(404).json({ message: "Lobby not found" });
     }
 
     // Check if the lobby is inactive
     if (lobby.isactive) {
-      return res.status(400).json({ message: 'Lobby is still active' });
+      return res.status(400).json({ message: "Lobby is still active" });
     }
 
     // Check if the lobby has already been updated
     if (lobby.isupdated) {
-      return res.status(400).json({ message: 'Lobby has already been updated' });
+      return res
+        .status(400)
+        .json({ message: "Lobby has already been updated" });
     }
 
     // Update the winner and score values
@@ -279,24 +276,46 @@ export const updateWinners = async (req, res, next) => {
 
     res.status(200).json(lobby);
   } catch (error) {
-    console.error('Error updating lobby winner and score:', error);
+    console.error("Error updating lobby winner and score:", error);
     next(error); // Pass any errors to the error handling middleware
   }
 };
-
 
 export const getUpdatedLobbies = async (req, res, next) => {
   try {
     // Find all lobbies where isupdated is true
     const updatedLobbies = await Lobby.findAll({
       where: {
-        isupdated: true
-      }
+        isupdated: true,
+      },
     });
 
     res.status(200).json(updatedLobbies);
   } catch (error) {
-    console.error('Error fetching updated lobbies:', error);
+    console.error("Error fetching updated lobbies:", error);
     next(error); // Pass any errors to the error handling middleware
+  }
+};
+
+export const getAllLobbyUsers = async (req, res, next) => {
+  try {
+    const { lobbyid } = req.params;
+
+    // Log the lobbyid to ensure it's being received correctly
+    console.log(`Fetching users for lobbyid: ${lobbyid}`);
+    console.log(LobbyUserIds.rawAttributes);
+
+    const lobbyUsers = await LobbyUserIds.findAll({
+      where: { lobbyid: lobbyid },
+    });
+
+    // Log the result to ensure data is being fetched correctly
+    console.log(`Found users: ${JSON.stringify(lobbyUsers)}`);
+
+    res.status(200).send(lobbyUsers);
+  } catch (error) {
+    // Log the error for better debugging
+    console.error(`Error fetching lobby users: ${error.message}`);
+    next(error);
   }
 };

@@ -38,3 +38,15 @@ export const Login = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const getUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findByPk(userId);
+    res
+      .status(200)
+      .json({ username: user.username, profile_pic: user.profile_pic });
+  } catch (error) {
+    next(error);
+  }
+};
