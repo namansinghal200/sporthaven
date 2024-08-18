@@ -315,6 +315,12 @@ export const updateWinnersAndLosers = async (req, res, next) => {
     // Find the lobby by lobbyid
     const lobby = await Lobby.findByPk(lobbyid);
 
+    if (winnerids.length + loserids.length <= 1) {
+      return res
+        .status(400)
+        .json({ message: "Not enough members! Add more users." });
+    }
+
     if (!lobby) {
       return res.status(404).json({ message: "Lobby not found" });
     }
