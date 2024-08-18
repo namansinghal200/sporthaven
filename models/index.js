@@ -8,6 +8,7 @@ import Lobby from "./Lobby.js";
 import LobbyUserIds from "./Lobby_userids.js";
 import Sport from "./Sport.js";
 import LobbyWinners from "./Lobby_winners.js";
+import LobbyLosers from "./Lobby_losers.js";
 
 // Define associations
 User.hasMany(LobbyUserIds, { foreignKey: "userid" });
@@ -21,6 +22,8 @@ User.hasMany(LobbyWinners, { foreignKey: "userid" });
 Lobby.hasMany(LobbyWinners, { foreignKey: "lobbyid" });
 LobbyWinners.belongsTo(User, { foreignKey: "userid" });
 LobbyWinners.belongsTo(Lobby, { foreignKey: "lobbyid" });
+LobbyLosers.belongsTo(User, { foreignKey: "userid" });
+LobbyLosers.belongsTo(Lobby, { foreignKey: "lobbyid" });
 
 const db = {
   User,
@@ -29,6 +32,7 @@ const db = {
   Sport,
   sequelize,
   LobbyWinners,
+  LobbyLosers,
   Sequelize,
 };
 

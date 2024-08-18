@@ -66,6 +66,7 @@
 // controllers/lobbyController.js
 
 import db from "../models/index.js";
+import LobbyLosers from "../models/Lobby_losers.js";
 const { Lobby, LobbyUserIds, Sport, User, LobbyWinners } = db;
 
 export const createLobby = async (req, res, next) => {
@@ -305,21 +306,17 @@ export const getPending = async (req, res, next) => {
   }
 };
 
-export const updateWinners = async (req, res, next) => {
+export const updateWinnersAndLosers = async (req, res, next) => {
   try {
     const { lobbyid } = req.params;
-    const { userids, winner_comments, score } = req.body;
+    const { winnerids, loserids, winner_comments, score } = req.body;
+    // console.log(userids, winner_comments, score);
 
     // Find the lobby by lobbyid
     const lobby = await Lobby.findByPk(lobbyid);
 
     if (!lobby) {
       return res.status(404).json({ message: "Lobby not found" });
-    }
-
-    // Check if the lobby is active
-    if (lobby.isactive) {
-      return res.status(400).json({ message: "Lobby is still active" });
     }
 
     // Check if the lobby has already been updated
@@ -333,18 +330,19 @@ export const updateWinners = async (req, res, next) => {
     const userIdsInLobby = await LobbyUserIds.findAll({
       where: {
         lobbyid: lobby.lobbyid,
-        userid: userids,
+        userid: winnerids,
       },
     });
 
     // Check if all provided userids are valid participants of the lobby
-    if (userIdsInLobby.length !== userids.length) {
+    if (userIdsInLobby.length !== winnerids.length) {
       return res
         .status(400)
         .json({ message: "One or more winners do not belong to the lobby" });
     }
 
     // Update the winner comments and score values in the lobby
+    lobby.isactive = false;
     lobby.winner = winner_comments;
     lobby.score = score;
     lobby.isupdated = true;
@@ -353,8 +351,14 @@ export const updateWinners = async (req, res, next) => {
     await lobby.save();
 
     // Create entries in lobby_winners table for each userid
-    for (const userid of userids) {
+    for (const userid of winnerids) {
       await LobbyWinners.create({
+        lobbyid: lobby.lobbyid,
+        userid: userid,
+      });
+    }
+    for (const userid of loserids) {
+      await LobbyLosers.create({
         lobbyid: lobby.lobbyid,
         userid: userid,
       });
@@ -447,7 +451,7 @@ export const getAllLobbyUsers = async (req, res, next) => {
 
 export const exitLobby = async (req, res, next) => {
   try {
-    const userId = req.user.id; // Assuming user ID is available in req.user
+    const { userId } = req.body; // Assuming user ID is available in req.user
     const user = await User.findByPk(userId);
 
     // Check if the user is in a lobby
@@ -473,6 +477,9 @@ export const exitLobby = async (req, res, next) => {
     // Update the lobby's isactive status if necessary
     if (lobby.currentsize < lobby.maxsize) {
       lobby.isactive = true;
+    }
+    if (lobby.currentsize == 0) {
+      lobby.isactive = false;
     }
 
     await lobby.save();

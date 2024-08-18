@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import userRoutes from "./routes/userRoutes.js";
 import lobbyRoutes from "./routes/lobbyRoutes.js";
 import sportRoutes from "./routes/sportRoutes.js";
+import resultRoutes from "./routes/wlRoutes.js";
 import mysql from "mysql2";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -31,6 +32,7 @@ app.use(cookieParser());
 app.use("/api/users", userRoutes);
 app.use("/api/lobbies", lobbyRoutes);
 app.use("/api/sports", sportRoutes);
+app.use("/api/results", resultRoutes);
 
 // Start server
 const PORT = process.env.PORT || 3010;

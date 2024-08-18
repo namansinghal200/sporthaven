@@ -48,7 +48,7 @@ export const getUser = async (req, res, next) => {
       profile_pic: user.profile_pic,
       activelobby: user.activelobby,
       currentlobby: user.currentlobby,
-      userId: user.userId,
+      userid: user.userid,
     });
   } catch (error) {
     next(error);
